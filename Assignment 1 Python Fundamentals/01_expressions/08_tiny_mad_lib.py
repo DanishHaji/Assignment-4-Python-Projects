@@ -12,3 +12,22 @@ Please type a verb and press enter. fly
 Code in Place is fun. I learned to program and used Python to make my tiny plant fly!
 '''
 
+def main():
+    # Define the sentence start
+    SENTENCE_START = "Programming is"
+
+    # Prompt the user for an adjective
+    adjective = input("Please type an adjective and press enter: ")
+    
+    # Prompt the user for a noun
+    noun = input("Please type a noun and press enter: ")
+    
+    # Prompt the user for a verb
+    verb = input("Please type a verb and press enter: ")
+    
+    # Print the fun sentence with the user-inputted words
+    print(f"{SENTENCE_START} fun. I learned to program and used Python to make my {adjective} {noun} {verb}!")
+
+# Run the main function
+if __name__ == "__main__":
+    main()
