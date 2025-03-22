@@ -5,15 +5,19 @@ Fill out the function get_first_element(lst) which takes in a list lst as a para
 
 def get_first_element(lst):
 
-    print(lst[0])
+    if lst:
+        print("First element:", lst[0])
+    else:
+        print("List is empty. No first element.")
 
 def get_last_element():
     lst = []
-    elem: str = input('Please enter an element of the list or press enter to stop. ')
-    while elem != '':
+    while True:
+        elem: str = input('Please enter an element of the list or press enter to stop. ')
+        if elem == '':
+            break
         lst.append(elem)
-        elem = input('Please enter an element of the list or press enter to stop. ')
-        return elem
+    return lst
     
 def main():
     lst = get_last_element()
