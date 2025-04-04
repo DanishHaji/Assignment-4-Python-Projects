@@ -30,4 +30,4 @@ if st.button("Calculate BMI"):
     else:
         st.error("Please enter valid weight and height values.")
 
-st.write("Developed by Danish Haji")
+st.write("Developed by Danish Haji.")
