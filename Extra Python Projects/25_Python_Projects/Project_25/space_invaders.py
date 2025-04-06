@@ -1,9 +1,13 @@
 import pygame
 import random
 import sys
-import os
 
-pygame.init()
+# Initialize pygame
+try:
+    pygame.init()
+except pygame.error as e:
+    print(f"Pygame initialization error: {e}")
+    sys.exit(1)
 
 # Screen dimensions
 WIDTH, HEIGHT = 800, 600
@@ -18,13 +22,6 @@ RED = (255, 0, 0)
 PURPLE = (255, 0, 255)
 
 clock = pygame.time.Clock()
-
-# Load sounds
-pygame.mixer.init()
-shoot_sound = pygame.mixer.Sound('shoot.mp3')
-collision_sound = pygame.mixer.Sound('explosion.mp3')
-pygame.mixer.music.load('background_music.mp3')
-pygame.mixer.music.play(-1)  # Loop music
 
 # Dynamic stars for background
 stars = [[random.randint(0, WIDTH), random.randint(0, HEIGHT)] for _ in range(100)]
@@ -56,7 +53,6 @@ class Player(pygame.sprite.Sprite):
 
     def shoot(self):
         bullet = Bullet(self.rect.centerx, self.rect.top)
-        shoot_sound.play()
         return bullet
 
 class Bullet(pygame.sprite.Sprite):
@@ -89,12 +85,6 @@ class Enemy(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT:
             self.rect.x = random.randint(0, WIDTH - self.rect.width)
             self.rect.y = random.randint(-100, -40)
-
-        # Enemy shoots randomly
-        if random.randint(0, 100) < 5:
-            enemy_bullet = EnemyBullet(self.rect.centerx, self.rect.bottom)
-            all_sprites.add(enemy_bullet)
-            enemy_bullets.add(enemy_bullet)
 
 class EnemyBullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -142,10 +132,9 @@ class Boss(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT:
             self.rect.top = -100
         if self.health <= 0:
-            collision_sound.play()
             self.kill()
 
-def main():
+def run_game():
     global all_sprites, enemy_bullets, power_ups
 
     all_sprites = pygame.sprite.Group()
@@ -171,7 +160,7 @@ def main():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                return False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     bullet = player.shoot()
@@ -235,18 +224,32 @@ def main():
 
         pygame.display.flip()
 
-    # Game Over screen
+    return True  # Game over, but not quit
+
+def game_over_screen():
     font = pygame.font.SysFont('Arial', 36)
-    game_over_text = font.render("Game Over! Press R to Restart", True, WHITE)
+    game_over_text = font.render("Game Over! Press R to Restart or Q to Quit", True, WHITE)
     window.blit(game_over_text, (WIDTH // 4, HEIGHT // 2))
     pygame.display.flip()
-    waiting = True
-    while waiting:
+    
+    while True:
         for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                waiting = False
-                main()
+            if event.type == pygame.QUIT:
+                return False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    return True  # Restart
+                if event.key == pygame.K_q:
+                    return False  # Quit
+        clock.tick(60)
 
+def main():
+    while True:
+        if not run_game():
+            break
+        if not game_over_screen():
+            break
+    
     pygame.quit()
     sys.exit()
 
