@@ -81,12 +81,6 @@ def ai_move(ai_player, human_player):
 
 # Main function to run the game
 def play_game():
-    print("Choose Game Mode:")
-    print("1. Player vs AI")
-    print("2. Player vs Player")
-    choice = input("Enter your choice: ")
-
-    if choice == "1":
         human_player = input("Do you want to be X or O? ").upper()
         while human_player not in ["X", "O"]:
             print("Invalid choice! Please select 'X' or 'O'.")
@@ -123,10 +117,6 @@ def play_game():
                 break
 
             current_player = "O" if current_player == "X" else "X"
-
-    else:
-        print("Invalid choice! Restart the game and choose 1 or 2.")
-
 
 if __name__ == "__main__":
     play_game()
