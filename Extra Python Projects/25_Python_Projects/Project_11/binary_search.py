@@ -1,46 +1,81 @@
+import streamlit as st
+import time
 
-def binary_search_iterative(arr, target):
-    """Binary Search using Iteration"""
-    left, right = 0, len(arr) - 1
+def naive_search(l, target):
+    for i in range(len(l)):
+        if l[i] == target:
+            return i
+    return -1
 
-    while left <= right:
-        mid = (left + right) // 2 # Find the middle index
+def binary_search(l, target, low=None, high=None):
+    if low is None:
+        low = 0
+    if high is None:
+        high = len(l) - 1
 
-        if arr[mid] == target:
-            return mid # Target found
-        elif arr[mid] < target:
-            left = mid + 1 # search the right half
-        else:
-            right = mid - 1 # search the left half
-    
-    return -1 # Target not found
+    if high < low:
+        return -1
 
-def binary_search_recursive(arr, target, left, right):
-    """Binary Search using Recursion"""
-    if left > right:
-        return -1 # Target not found
-    
-    mid = (left + right) // 2 # Find the middle index
+    midpoint = (low + high) // 2
 
-    if arr[mid] == target:
-        return mid # Target found
-    elif arr[mid] < target:
-        return binary_search_recursive(arr, target, mid + 1, right) # search the right half
+    if l[midpoint] == target:
+        return midpoint
+    elif target < l[midpoint]:
+        return binary_search(l, target, low, midpoint - 1)
     else:
-        return binary_search_recursive(arr, target, left, mid - 1) # search the left half
-    
+        return binary_search(l, target, midpoint + 1, high)
 
-if __name__ == "__main__":
-    numbers = sorted([12, 3, 8, 15, 29, 42, 23, 6, 18, 31]) # Ensure the list is sorted
-    print("Sorted Array:", numbers)
+@st.cache_data
+def generate_sorted_list():
+    return list(range(-30000, 30001))
 
-    target = int(input("Enter a number to search: "))
+st.set_page_config(page_title="Binary vs Naive Search", layout="centered")
+st.title("🔍 Binary vs Naive Search Comparison")
+st.markdown("Search for a number between **-30,000 to 30,000** using both methods at once.")
 
-    # Iterative Binary Search
-    result_iterative = binary_search_iterative(numbers, target)
-    print(f"Iterative Search: {'Found at index' + str(result_iterative) if result_iterative != -1 else 'Not Found'}")
 
-    # Recursive Search
-    result_iterative = binary_search_recursive(numbers, target, 0, len(numbers) - 1)
-    print(f"Recursive Search: {'Found at index' + str(result_iterative) if result_iterative != -1 else 'Not Found'}")
+sorted_list = generate_sorted_list()
 
+
+st.subheader("🎯 Enter the number you want to search")
+col1, col2 = st.columns(2)
+with col1:
+    target = st.slider("Select a number", -30000, 30000, 0)
+with col2:
+    manual_input = st.number_input("Or type a number", value=target, step=1)
+    target = manual_input  
+
+
+if st.button("🔎 Search Now"):
+    # Naive search
+    start_naive = time.time()
+    index_naive = naive_search(sorted_list, target)
+    end_naive = time.time()
+    time_naive = end_naive - start_naive
+
+    # Binary search
+    start_binary = time.time()
+    index_binary = binary_search(sorted_list, target)
+    end_binary = time.time()
+    time_binary = end_binary - start_binary
+
+    # Results
+    st.subheader("🔁 Search Results")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 🐢 Naive Search")
+        if index_naive != -1:
+            st.success(f"Found `{target}` at index `{index_naive}`")
+        else:
+            st.error("Not found.")
+        st.info(f"⏱️ Time: `{time_naive:.6f}` seconds")
+
+    with col2:
+        st.markdown("### ⚡ Binary Search")
+        if index_binary != -1:
+            st.success(f"Found `{target}` at index `{index_binary}`")
+        else:
+            st.error("Not found.")
+        st.info(f"⏱️ Time: `{time_binary:.6f}` seconds")
