@@ -1,133 +1,82 @@
 import os
 import shutil
+import streamlit as st
+import pandas as pd
 from pathlib import Path
 
-def clear_screen():
-    os.system('cls' if os.name == 'nt' else 'clear')
+# Page config
+st.set_page_config(
+    page_title="Smart File/Folder Renamer",
+    page_icon="🛠️",
+    layout="wide"
+)
 
-def get_valid_path(prompt, must_exist=True, allow_files=False):
-    """Get a valid filesystem path from user"""
-    while True:
-        path = input(prompt).strip()
-        if not path:
-            return None
-        
-        path = Path(path)
-        if not must_exist:
-            return path
-        
-        if not path.exists():
-            print(f"Error: Path '{path}' doesn't exist")
-            continue
-            
-        if not allow_files and not path.is_dir():
-            print(f"Error: '{path}' is not a folder")
-            continue
-            
-        return path
+# Header
+st.title("🛠️ Smart File/Folder Renamer")
+st.write("Easily preview and rename files or folders in a given directory using simple replace rules.")
 
-def list_contents(path, show_files=True, show_folders=True):
-    """List files and/or folders at given path"""
-    items = []
-    for item in path.iterdir():
-        if (show_files and item.is_file()) or (show_folders and item.is_dir()):
-            items.append(item.name)
-    
-    print(f"\nFound {len(items)} items:")
-    for i, item in enumerate(sorted(items), 1):
-        print(f"{i}. {item}")
-    return items
+# Input section
+st.subheader("📁 Directory Selection")
+directory_input = st.text_input("Enter directory path:", value="")
+path = Path(directory_input)
 
-def preview_rename(items, prefix="", suffix="", remove="", replace_with=""):
-    """Generate rename preview"""
-    changes = []
-    for item in items:
-        name = item.stem
-        ext = item.suffix if item.is_file() else ""
-        
-        # Apply transformations
-        if remove:
-            name = name.replace(remove, replace_with)
-        new_name = f"{prefix}{name}{suffix}{ext}"
-        
-        changes.append((item.name, new_name))
-    
-    return changes
+# Preview type
+view_option = st.radio("Preview:", ["Files", "Folders"], horizontal=True)
 
-def confirm_rename(path, changes):
-    """Execute the rename operations"""
-    success = 0
-    for old, new in changes:
-        try:
-            old_path = path / old
-            new_path = path / new
-            
-            if old == new:
-                continue
-                
-            if new_path.exists():
-                print(f"Skipping '{old}' → '{new}' (already exists)")
-                continue
-                
-            shutil.move(str(old_path), str(new_path))
-            success += 1
-        except Exception as e:
-            print(f"Error renaming '{old}': {e}")
-    
-    return success
-
-def main():
-    clear_screen()
-    print("=== Universal Bulk Renamer ===")
-    print("Works with any files and folders\n")
-    
-    
-    path = get_valid_path(
-        "Enter folder path (or press Enter for current directory): ",
-        must_exist=True,
-        allow_files=False
-    )
-    if not path:
-        path = Path.cwd()
-    
-    
-    print("\nWhat do you want to rename?")
-    print("1. Files only")
-    print("2. Folders only")
-    print("3. Both files and folders")
-    choice = input("Your choice (1-3): ").strip()
-    
-    show_files = choice in ("1", "3")
-    show_folders = choice in ("2", "3")
-    
-    items = []
-    for item in path.iterdir():
-        if (show_files and item.is_file()) or (show_folders and item.is_dir()):
-            items.append(item)
-    
-    if not items:
-        print("\nNo matching items found!")
-        return
-    
-    
-    print("\nSet renaming rules:")
-    prefix = input("Add text at start (prefix): ").strip()
-    suffix = input("Add text at end (suffix): ").strip()
-    remove = input("Text to remove (leave empty to skip): ").strip()
-    replace_with = input("Replace with (leave empty to just remove): ").strip() if remove else ""
-    
-   
-    changes = preview_rename(items, prefix, suffix, remove, replace_with)
-    print("\nPreview changes:")
-    for old, new in changes:
-        print(f"{old} → {new}")
-    
-    
-    if input("\nApply these changes? (y/n): ").lower() == 'y':
-        success = confirm_rename(path, changes)
-        print(f"\nDone! Successfully renamed {success}/{len(changes)} items.")
+# Function to list items based on selection
+def list_items(path: Path, option: str):
+    if not path.exists():
+        return []
+    if option == "Files":
+        return [f for f in path.iterdir() if f.is_file()]
+    elif option == "Folders":
+        return [f for f in path.iterdir() if f.is_dir()]
     else:
-        print("Operation cancelled.")
+        return list(path.iterdir())
 
-if __name__ == "__main__":
-    main()
+# Preview items
+if st.button("🔍 Preview"):
+    if not path.exists():
+        st.error("Invalid path! Please enter a correct directory path.")
+    else:
+        items = list_items(path, view_option)
+        if not items:
+            st.warning("No items found.")
+        else:
+            item_names = [item.name for item in items]
+            st.success(f"Found {len(item_names)} items.")
+            st.dataframe(pd.DataFrame({"Name": item_names}), use_container_width=True)
+            st.session_state["items"] = items  # Store items for renaming
+
+# Renaming rules
+st.subheader("✂️ Renaming Rules")
+text_to_remove = st.text_input("Text to remove:")
+text_to_replace = st.text_input("Replace with:")
+
+# Rename button
+if "items" in st.session_state and st.button("✅ Rename Items"):
+    items = st.session_state["items"]
+    success, skipped, errors = 0, 0, 0
+    renamed_data = []
+
+    for item in items:
+        original = item.name
+        new_name = original.replace(text_to_remove, text_to_replace)
+        new_path = item.parent / new_name
+
+        if original == new_name or new_path.exists():
+            skipped += 1
+            continue
+
+        try:
+            shutil.move(str(item), str(new_path))
+            success += 1
+            renamed_data.append({"Old Name": original, "New Name": new_name, "Status": "Renamed"})
+        except Exception as e:
+            errors += 1
+            renamed_data.append({"Old Name": original, "New Name": new_name, "Status": f"Error: {e}"})
+
+    st.success(f"Renaming complete ✅\n- Renamed: {success}\n- Skipped: {skipped}\n- Errors: {errors}")
+
+    if renamed_data:
+        st.dataframe(pd.DataFrame(renamed_data), use_container_width=True)
